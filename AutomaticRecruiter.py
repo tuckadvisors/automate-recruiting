@@ -1,5 +1,6 @@
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
+from datetime import datetime
 import requests
 import json
 from dotenv import load_dotenv
@@ -151,7 +152,7 @@ class AutomaticRecruiter:
                   current_custom_field = field["id"]
                   self.pd_val_fields["custom_fields"]["custom_label_3815053"].append(current_custom_field)
           elif field_num == 13: # source / referred by
-            self.pd_val_fields["custom_fields"]["custom_label_3844026"] = current_data
+            self.pd_val_fields["custom_fields"]["custom_label_3844026"] = current_data + "\nApplication Date: " + datetime.today().strftime('%m-%d-%Y')
 
           # populate summary fields -- make sure these are sorted
           elif field_num == 4:
