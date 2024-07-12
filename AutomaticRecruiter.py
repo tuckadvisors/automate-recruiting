@@ -51,9 +51,10 @@ class AutomaticRecruiter:
       10: "mobile",
       11: "Expected Graduation Year",
       12: "summary",
-      13: "email",
-      14: "resume",
-      15: "Term Interested in Internship",
+      13: "Source / Referred By",
+      14: "email",
+      15: "resume",
+      16: "Term Interested in Internship",
     }
 
     # Map to fill values of response fields
@@ -65,11 +66,10 @@ class AutomaticRecruiter:
       "last_name": "",
       "first_name": "",
       "custom_fields": {
-        "custom_label_2398501": "", # Term of Employment
-        "custom_label_3854264": "", # In Hanover Office During Internship?
-        "custom_label_3816622": "", # Expected Graduation Year
+        "custom_label_3815151": "", # Class of
         "custom_label_3843630": "", # recruiting step
-        "custom_label_3815053": [] # Term interested in internship
+        "custom_label_3815053": [], # Term interested in internship
+        "custom_label_3844026": ""  # source / referred by
       },
       "email": "",
       "resume": "",
@@ -95,17 +95,23 @@ class AutomaticRecruiter:
       #   count += 1
       # --------------------------------------------------------------------
 
-      self.search_term_of_employment = cleaned_response["entries"][3]["custom_field_label_dropdown_entries"]
       self.recruiting_step = cleaned_response["entries"][6]["custom_field_label_dropdown_entries"]
-      self.search_in_hanover_office = cleaned_response["entries"][65]["custom_field_label_dropdown_entries"]
-      self.search_exp_graduation_year = cleaned_response["entries"][95]["custom_field_label_dropdown_entries"]
+      self.search_exp_graduation_year = cleaned_response["entries"][195]["custom_field_label_dropdown_entries"] # class of... dropdown
       self.term_interested_in_internship = cleaned_person_response["entries"][47]["custom_field_label_dropdown_entries"]
+      self.source_referred_by = cleaned_response["entries"][66] # source / referred by
 
     except Exception as e:
       print("Error:", e)
 
   def populate_pd_val_fields(self):
     response = sorted(self.responses['responses'], key=lambda x: x['createTime'], reverse=True)[0]
+    
+    # Displays ordering of input fields in google form for debugging
+    # --------------------------------------------------------------------
+    # with open("test.json", "w") as f:
+    #   json.dump(response, f)
+    # --------------------------------------------------------------------
+    
     field_num = 0
     self.pd_link_to_name = {} # Mapping links to titles for the documents
     outer_answers = response["answers"]
@@ -136,7 +142,7 @@ class AutomaticRecruiter:
             for field in self.search_exp_graduation_year:
               if field["name"] == str(current_data):
                 current_custom_field = field["id"]
-            self.pd_val_fields["custom_fields"]["custom_label_3816622"] = current_custom_field
+            self.pd_val_fields["custom_fields"]["custom_label_3815151"] = current_custom_field
           elif field_num == 0: # term interested in internship, ft / pt
             for val in data:
               current_data = val["value"]
@@ -144,6 +150,8 @@ class AutomaticRecruiter:
                 if field["name"] == str(current_data):
                   current_custom_field = field["id"]
                   self.pd_val_fields["custom_fields"]["custom_label_3815053"].append(current_custom_field)
+          elif field_num == 13: # source / referred by
+            self.pd_val_fields["custom_fields"]["custom_label_3844026"] = current_data
 
           # populate summary fields -- make sure these are sorted
           elif field_num == 4:
@@ -167,8 +175,8 @@ class AutomaticRecruiter:
   def check_person_exists(self):
     self.id_to_update = None
     self.populate_pd_val_fields()
-    self.pd_check_person_url = "https://api.pipelinecrm.com/api/v3/people?conditions[person_email]={}&conditions[person_first_name]={}&conditions[person_last_name]={}&api_key={}&app_key={}".format(
-      self.pd_val_fields["email"], self.pd_val_fields["first_name"], self.pd_val_fields["last_name"], self.pd_api_key, self.pd_app_key
+    self.pd_check_person_url = "https://api.pipelinecrm.com/api/v3/people?conditions[person_linked_in_url]={}&conditions[person_first_name]={}&conditions[person_last_name]={}&api_key={}&app_key={}".format(
+      self.pd_val_fields["linked_in_url"], self.pd_val_fields["first_name"], self.pd_val_fields["last_name"], self.pd_api_key, self.pd_app_key
     )
     response = requests.get(
       url = self.pd_check_person_url
@@ -209,6 +217,7 @@ class AutomaticRecruiter:
 
   def update_pd_profile(self):
     print("Trying to update: ", self.id_to_update)
+    # check this
     response = requests.put(
       url = "https://api.pipelinecrm.com/api/v3/people/{}?api_key={}&app_key={}".format(self.id_to_update, self.pd_api_key, self.pd_app_key),
       json = {"person": self.pd_val_fields}
@@ -294,7 +303,7 @@ class AutomaticRecruiter:
     else:
       self.update_documents()
     # create task to review new profile
-    self.create_task()
+    # self.create_task()
 
 if __name__ == '__main__':
   a = AutomaticRecruiter()
