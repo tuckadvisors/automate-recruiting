@@ -303,8 +303,6 @@ class AutomaticRecruiter:
       self.create_documents()
     else:
       self.update_documents()
-    # create task to review new profile
-    # self.create_task()
 
 if __name__ == '__main__':
   a = AutomaticRecruiter()
