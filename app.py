@@ -19,6 +19,7 @@ def update_pd():
     a.main()
     return jsonify({"response": "successfully updated pipeline"}), 200
   except Exception as e:
+    print(e)
     return jsonify({"response": "unable to update pipeline"}), 400
   
 if __name__ == '__main__':
